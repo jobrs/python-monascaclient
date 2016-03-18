@@ -675,7 +675,7 @@ def do_notifications_batch_import(mc, args):
            help='Filter by prefix of the notification name.')
 @utils.arg('--file', metavar='<FILE>',
            help='Output file (default to stdout).')
-def do_notifications_batch_export(mc, args):
+def do_notification_export(mc, args):
     '''Export notifications to stdout or a file.'''
     try:
         if args.file is None:
@@ -1121,7 +1121,7 @@ def _id_to_name(ids, mappings):
            help='Filter by prefix of the alarm definition name.')
 @utils.arg('--file', metavar='<FILE>',
            help='Output file (default to stdout).')
-def do_alarm_definitions_batch_export(mc, args):
+def do_alarm_definition_export(mc, args):
     '''Export alarm definitions to stdout or a file.'''
     try:
         if args.file is None:
@@ -1159,7 +1159,7 @@ def _get_alarm_definitions_by_name(mc, name):
            help='Filter by prefix of the alarm definition name.')
 @utils.arg('--file', metavar='<FILE>',
            help='Input file (default to stdin).')
-def do_alarm_definitions_batch_import(mc, args):
+def do_alarm_definition_import(mc, args):
     '''Import alarm definitions to stdout or a file.'''
     try:
         if args.file is None:
