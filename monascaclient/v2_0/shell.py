@@ -15,14 +15,17 @@
 
 import datetime
 import json
+import logging
 import numbers
 import time
 
+import sys
 
 from monascaclient.common import utils
 import monascaclient.exc as exc
 from monascaclient.openstack.common import jsonutils
 
+log = logging.getLogger(__name__)
 
 # Alarm valid types
 severity_types = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
@@ -164,6 +167,7 @@ def do_metric_list(mc, args):
                 metric_list,
                 cols,
                 formatters=formatters)
+
 
 @utils.arg('--dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
            help='key value pair used to specify a metric dimension. '
@@ -626,6 +630,77 @@ def _validate_severity(severity):
     return True
 
 
+def _get_notifications_by_name(mc, name):
+    return filter(lambda a: a['name'] == name, mc.notifications.list())
+
+
+@utils.arg('--match_prefix', metavar='<MATCH_PREFIX>',
+           help='Filter by prefix of the notification name.')
+@utils.arg('--file', metavar='<FILE>',
+           help='Input file (default to stdin).')
+def do_notifications_batch_import(mc, args):
+    '''Import notifications from stdin or a file.'''
+    try:
+        if args.file is None:
+            data_file = sys.stdin
+        else:
+            data_file = open(args.file, 'r')
+
+        notifications = json.load(data_file)
+        if args.match_prefix:
+            notifications = filter(lambda a: a['name'].startswith(args.match_prefix), notifications)
+        for notf in notifications:  # replace notification reference names with IDs
+            notf.pop('id', None)  # remove so that it is not ignored
+            notf.pop('links', None)  # ignore
+            try:
+                log.info('attempting to create notification %s', notf['name'])
+                mc.notifications.create(**notf)
+            except exc.HTTPConflict:
+                old_id = _get_notifications_by_name(mc, notf['name'])[0]['id']
+                notf_u = notf.copy()
+                notf_u['notification_id'] = old_id  # update the first notification with the same name
+                log.info('attempting to update existing notification %s with id %s', notf_u['name'],
+                         notf_u['notification_id'])
+                mc.notifications.update(**notf_u)
+
+    except exc.HTTPException as he:
+        raise exc.CommandError(
+            'HTTPException code=%s message=%s' %
+            (he.code, he.message))
+    else:
+        print('Successfully imported notifications')
+
+
+@utils.arg('--match_prefix', metavar='<MATCH_PREFIX>',
+           help='Filter by prefix of the notification name.')
+@utils.arg('--file', metavar='<FILE>',
+           help='Output file (default to stdout).')
+def do_notifications_batch_export(mc, args):
+    '''Export notifications to stdout or a file.'''
+    try:
+        if args.file is None:
+            data_file = sys.stdout
+        else:
+            data_file = open(args.file, 'w')
+
+        nlist = []
+        notifications = mc.notifications.list()
+        if args.match_prefix:
+            notifications = filter(lambda a: a['name'].startswith(args.match_prefix), notifications)
+
+        for nref in notifications:  # load and replace notification reference IDs with names
+            notf = mc.notifications.get(notification_id=nref['id'])
+            notf.pop('links', None)
+            nlist.append(notf)
+
+        json.dump(nlist, data_file, sort_keys=True, indent=4, separators=(',', ': '))
+
+    except exc.HTTPException as he:
+        raise exc.CommandError(
+            'HTTPException code=%s message=%s' %
+            (he.code, he.message))
+
+
 @utils.arg('name', metavar='<ALARM_DEFINITION_NAME>',
            help='Name of the alarm definition to create.')
 @utils.arg('--description', metavar='<DESCRIPTION>',
@@ -727,9 +802,9 @@ def do_alarm_definition_show(mc, args):
            help='Severity is one of ["LOW", "MEDIUM", "HIGH", "CRITICAL"]')
 @utils.arg('--sort-by', metavar='<SORT BY FIELDS>',
            help='Fields to sort by as a comma separated list. Valid values are id, '
-                'name, severity, updated_timestamp, created_timestamp. '
-                'Fields may be followed by "asc" or "desc", ex "severity desc", '
-                'to set the direction of sorting.')
+           'name, severity, updated_timestamp, created_timestamp. '
+           'Fields may be followed by "asc" or "desc", ex "severity desc", '
+           'to set the direction of sorting.')
 @utils.arg('--offset', metavar='<OFFSET LOCATION>',
            help='The offset used to paginate the return data.')
 @utils.arg('--limit', metavar='<RETURN LIMIT>',
@@ -815,14 +890,14 @@ def do_alarm_definition_delete(mc, args):
            help='The alarm expression to evaluate. Quoted.')
 @utils.arg('alarm-actions', metavar='<ALARM-NOTIFICATION-ID1,ALARM-NOTIFICATION-ID2,...>',
            help='The notification method(s) to use when an alarm state is ALARM '
-                'as a comma separated list.')
+           'as a comma separated list.')
 @utils.arg('ok-actions', metavar='<OK-NOTIFICATION-ID1,OK-NOTIFICATION-ID2,...>',
            help='The notification method(s) to use when an alarm state is OK '
            'as a comma separated list.')
 @utils.arg('undetermined-actions',
            metavar='<UNDETERMINED-NOTIFICATION-ID1,UNDETERMINED-NOTIFICATION-ID2,...>',
            help='The notification method(s) to use when an alarm state is UNDETERMINED '
-                'as a comma separated list.')
+           'as a comma separated list.')
 @utils.arg('actions_enabled', metavar='<ACTIONS-ENABLED>',
            help='The actions-enabled boolean is one of [true,false]')
 @utils.arg('match-by', metavar='<DIMENSION_KEY1,DIMENSION_KEY2,...>',
@@ -947,10 +1022,10 @@ def do_alarm_definition_patch(mc, args):
            help='The link to external data associated with the alarm')
 @utils.arg('--sort-by', metavar='<SORT BY FIELDS>',
            help='Fields to sort by as a comma separated list. Valid values are alarm_id, '
-                'alarm_definition_id, state, severity, lifecycle_state, link, '
-                'state_updated_timestamp, updated_timestamp, created_timestamp. '
-                'Fields may be followed by "asc" or "desc", ex "severity desc", '
-                'to set the direction of sorting.')
+           'alarm_definition_id, state, severity, lifecycle_state, link, '
+           'state_updated_timestamp, updated_timestamp, created_timestamp. '
+           'Fields may be followed by "asc" or "desc", ex "severity desc", '
+           'to set the direction of sorting.')
 @utils.arg('--offset', metavar='<OFFSET LOCATION>',
            help='The offset used to paginate the return data.')
 @utils.arg('--limit', metavar='<RETURN LIMIT>',
@@ -1034,6 +1109,109 @@ def do_alarm_list(mc, args):
             utils.print_list(alarm_list, cols, formatters=formatters)
 
 
+def _name_to_id(names, mappings):
+    return map(lambda a: a['id'], filter(lambda a: a['name'] in names, mappings))
+
+
+def _id_to_name(ids, mappings):
+    return map(lambda a: a['name'], filter(lambda a: a['id'] in ids, mappings))
+
+
+@utils.arg('--match_prefix', metavar='<MATCH_PREFIX>',
+           help='Filter by prefix of the alarm definition name.')
+@utils.arg('--file', metavar='<FILE>',
+           help='Output file (default to stdout).')
+def do_alarm_definitions_batch_export(mc, args):
+    '''Export alarm definitions to stdout or a file.'''
+    try:
+        if args.file is None:
+            data_file = sys.stdout
+        else:
+            data_file = open(args.file, 'w')
+
+        listed_adefs = []
+        all_notifications = mc.notifications.list()
+        alarm_defs = mc.alarm_definitions.list()
+        if args.match_prefixmatch_prefix:
+            alarm_defs = filter(lambda a: a['name'].startswith(args.match_prefix), alarm_defs)
+
+        for aref in alarm_defs:  # load and replace notification reference IDs with names
+            adef = mc.alarm_definitions.get(alarm_id=aref['id'])
+            adef["alarm_actions"] = _id_to_name(adef['alarm_actions'], all_notifications)
+            adef['ok_actions'] = _id_to_name(adef['ok_actions'], all_notifications)
+            adef['undetermined_actions'] = _id_to_name(adef['undetermined_actions'], all_notifications)
+            adef.pop('links', None)
+            listed_adefs.append(adef)
+
+        json.dump(listed_adefs, data_file, sort_keys=True, indent=4, separators=(',', ': '))
+
+    except exc.HTTPException as he:
+        raise exc.CommandError(
+            'HTTPException code=%s message=%s' %
+            (he.code, he.message))
+
+
+def _get_alarm_definitions_by_name(mc, name):
+    return filter(lambda a: a['name'] == name, mc.alarm_definitions.list())
+
+
+@utils.arg('--match_prefix', metavar='<MATCH_PREFIX>',
+           help='Filter by prefix of the alarm definition name.')
+@utils.arg('--file', metavar='<FILE>',
+           help='Input file (default to stdin).')
+def do_alarm_definitions_batch_import(mc, args):
+    '''Import alarm definitions to stdout or a file.'''
+    try:
+        if args.file is None:
+            data_file = sys.stdin
+        else:
+            data_file = open(args.file, 'r')
+
+        alarm_defs = json.load(data_file)
+
+        all_notifications = mc.notifications.list()
+        if args.match_prefix:
+            alarm_defs = filter(lambda a: a['name'].startswith(args.match_prefix), alarm_defs)
+
+        for adef in alarm_defs:  # replace notification reference names with IDs
+            adef['alarm_actions'] = _name_to_id(adef['alarm_actions'], all_notifications)
+            adef['ok_actions'] = _name_to_id(adef['ok_actions'], all_notifications)
+            adef['undetermined_actions'] = _name_to_id(adef['undetermined_actions'], all_notifications)
+            count = len(adef['alarm_actions']) + len(adef['ok_actions']) + len(adef['undetermined_actions'])
+            if count > 0:
+                adef['actions_enabled'] = True
+            else:
+                adef['actions_enabled'] = False
+            adef.pop('id', None)
+            adef.pop('links', None)  # ignore
+
+            try:
+                log.info('attempting to create alarm-definition %s', adef['name'])
+                mc.alarm_definitions.create(**adef)
+            except exc.HTTPConflict:
+                old_id = _get_alarm_definitions_by_name(mc, adef['name'])[0]['id']
+                adef_u = adef.copy()
+                adef_u['alarm_id'] = old_id  # update the first alarm definitions with the same name
+                try:
+                    log.info('attempting to update existing alarm-definition %s with id %s', adef_u['name'],
+                             adef_u['notification_id'])
+                    mc.alarm_definitions.update(**adef_u)
+                except exc.HTTPUnProcessable as e:
+                    sys.stdout.write(
+                        'Alarm-Definition {0} has to be recreated (no alarm history), reason: {1}\n'.format(
+                            adef['name'],
+                            e.message))
+                    mc.alarm_definitions.delete(
+                        alarm_id=old_id)  # update is too restricted, so we delete and replace
+
+    except exc.HTTPException as he:
+        raise exc.CommandError(
+            'HTTPException code=%s message=%s' %
+            (he.code, he.message))
+    else:
+        print('Successfully imported alarm-definitions')
+
+
 @utils.arg('id', metavar='<ALARM_ID>',
            help='The ID of the alarm.')
 def do_alarm_show(mc, args):
@@ -1074,10 +1252,10 @@ def do_alarm_update(mc, args):
     fields = {}
     fields['alarm_id'] = args.id
     if args.state.upper() not in state_types:
-            errmsg = 'Invalid state, not one of [' + \
-                ', '.join(state_types) + ']'
-            print(errmsg)
-            return
+        errmsg = 'Invalid state, not one of [' + \
+                 ', '.join(state_types) + ']'
+        print(errmsg)
+        return
     fields['state'] = args.state
     fields['lifecycle_state'] = args.lifecycle_state
     fields['link'] = args.link
@@ -1106,7 +1284,7 @@ def do_alarm_patch(mc, args):
     if args.state:
         if args.state.upper() not in state_types:
             errmsg = 'Invalid state, not one of [' + \
-                ', '.join(state_types) + ']'
+                     ', '.join(state_types) + ']'
             print(errmsg)
             return
         fields['state'] = args.state
@@ -1142,8 +1320,8 @@ def do_alarm_delete(mc, args):
 
 def output_alarm_history(args, alarm_history):
     if args.json:
-            print(utils.json_formatter(alarm_history))
-            return
+        print(utils.json_formatter(alarm_history))
+        return
     # format output
     cols = ['alarm_id', 'new_state', 'old_state', 'reason',
             'reason_data', 'metric_name', 'metric_dimensions', 'timestamp']
@@ -1173,10 +1351,10 @@ def output_alarm_history(args, alarm_history):
            help='Name of the metric.')
 @utils.arg('--metric-dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
            help='key value pair used to specify a metric dimension. '
-           'This can be specified multiple times, or once with parameters '
-           'separated by a comma. '
-           'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
-           'that confuse the CLI parser.',
+                'This can be specified multiple times, or once with parameters '
+                'separated by a comma. '
+                'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
+                'that confuse the CLI parser.',
            action='append')
 @utils.arg('--state', metavar='<ALARM_STATE>',
            help='ALARM_STATE is one of [UNDETERMINED, OK, ALARM].')
@@ -1206,7 +1384,7 @@ def do_alarm_count(mc, args):
     if args.state:
         if args.state.upper() not in state_types:
             errmsg = 'Invalid state, not one of [' + \
-                ', '.join(state_types) + ']'
+                     ', '.join(state_types) + ']'
             print(errmsg)
             return
         fields['state'] = args.state
@@ -1222,7 +1400,7 @@ def do_alarm_count(mc, args):
         group_by = args.group_by.split(',')
         if not set(group_by).issubset(set(group_by_types)):
             errmsg = 'Invalid group-by, one or more values not in [' + \
-                ','.join(group_by_types) + ']'
+                     ','.join(group_by_types) + ']'
             print(errmsg)
             return
         fields['group_by'] = args.group_by
@@ -1272,10 +1450,10 @@ def do_alarm_history(mc, args):
 
 @utils.arg('--dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
            help='key value pair used to specify a metric dimension. '
-           'This can be specified multiple times, or once with parameters '
-           'separated by a comma. '
-           'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
-           'that confuse the CLI parser.',
+                'This can be specified multiple times, or once with parameters '
+                'separated by a comma. '
+                'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
+                'that confuse the CLI parser.',
            action='append')
 @utils.arg('--starttime', metavar='<UTC_START_TIME>',
            help='measurements >= UTC time. format: 2014-01-01T00:00:00Z. OR format: -120 (for previous 2 hours)')
