@@ -638,7 +638,7 @@ def _get_notifications_by_name(mc, name):
            help='Filter by prefix of the notification name.')
 @utils.arg('--file', metavar='<FILE>',
            help='Input file (default to stdin).')
-def do_notifications_batch_import(mc, args):
+def do_notification_import(mc, args):
     '''Import notifications from stdin or a file.'''
     try:
         if args.file is None:
@@ -1132,7 +1132,7 @@ def do_alarm_definition_export(mc, args):
         listed_adefs = []
         all_notifications = mc.notifications.list()
         alarm_defs = mc.alarm_definitions.list()
-        if args.match_prefixmatch_prefix:
+        if args.match_prefix:
             alarm_defs = filter(lambda a: a['name'].startswith(args.match_prefix), alarm_defs)
 
         for aref in alarm_defs:  # load and replace notification reference IDs with names
@@ -1178,10 +1178,7 @@ def do_alarm_definition_import(mc, args):
             adef['ok_actions'] = _name_to_id(adef['ok_actions'], all_notifications)
             adef['undetermined_actions'] = _name_to_id(adef['undetermined_actions'], all_notifications)
             count = len(adef['alarm_actions']) + len(adef['ok_actions']) + len(adef['undetermined_actions'])
-            if count > 0:
-                adef['actions_enabled'] = True
-            else:
-                adef['actions_enabled'] = False
+            adef.pop('actions_enabled', None)
             adef.pop('id', None)
             adef.pop('links', None)  # ignore
 
@@ -1192,9 +1189,10 @@ def do_alarm_definition_import(mc, args):
                 old_id = _get_alarm_definitions_by_name(mc, adef['name'])[0]['id']
                 adef_u = adef.copy()
                 adef_u['alarm_id'] = old_id  # update the first alarm definitions with the same name
+                adef_u['actions_enabled'] = (count > 0)
                 try:
                     log.info('attempting to update existing alarm-definition %s with id %s', adef_u['name'],
-                             adef_u['notification_id'])
+                             adef_u['alarm_id'])
                     mc.alarm_definitions.update(**adef_u)
                 except exc.HTTPUnProcessable as e:
                     sys.stdout.write(
