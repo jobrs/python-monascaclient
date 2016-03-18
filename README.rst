@@ -118,6 +118,8 @@ You'll find complete documentation on the shell by running
     <subcommand>
       alarm-definition-create  Create an alarm definition.
       alarm-definition-delete  Delete the alarm definition.
+      alarm-definition-export  Export multiple alarm definitions to stdout or file (JSON)
+      alarm-definition-import  Import multiple alarm definitions from stdin or file (JSON)
       alarm-definition-list    List alarm definitions for this tenant.
       alarm-definition-patch   Patch the alarm definition.
       alarm-definition-show    Describe the alarm definition.
@@ -137,6 +139,8 @@ You'll find complete documentation on the shell by running
       metric-statistics        List measurement statistics for the specified metric.
       notification-create      Create notification.
       notification-delete      Delete notification.
+      notification-export      Export multiple notifications to stdout or file (JSON)
+      notification-import      Import multiple notifications from stdin or file (JSON)
       notification-list        List notifications for this tenant.
       notification-show        Describe the notification.
       notification-update      Update notification.
