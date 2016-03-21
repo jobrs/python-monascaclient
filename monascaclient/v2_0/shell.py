@@ -17,6 +17,7 @@ import datetime
 import json
 import logging
 import numbers
+import re
 import time
 
 import sys
@@ -634,8 +635,8 @@ def _get_notifications_by_name(mc, name):
     return filter(lambda a: a['name'] == name, mc.notifications.list())
 
 
-@utils.arg('--match_prefix', metavar='<MATCH_PREFIX>',
-           help='Filter by prefix of the notification name.')
+@utils.arg('--match',metavar='<MATCH>',
+           help='Filter by regex of the notification name, e.g. ".*substring.*"')
 @utils.arg('--file', metavar='<FILE>',
            help='Input file (default to stdin).')
 def do_notification_import(mc, args):
@@ -647,8 +648,8 @@ def do_notification_import(mc, args):
             data_file = open(args.file, 'r')
 
         notifications = json.load(data_file)
-        if args.match_prefix:
-            notifications = filter(lambda a: a['name'].startswith(args.match_prefix), notifications)
+        if args.match:
+            notifications = filter(lambda a: re.match(args.match, a['name'], re.IGNORECASE), notifications)
         for notf in notifications:  # replace notification reference names with IDs
             notf.pop('id', None)  # remove so that it is not ignored
             notf.pop('links', None)  # ignore
@@ -671,8 +672,8 @@ def do_notification_import(mc, args):
         print('Successfully imported notifications')
 
 
-@utils.arg('--match_prefix', metavar='<MATCH_PREFIX>',
-           help='Filter by prefix of the notification name.')
+@utils.arg('--match',metavar='<MATCH>',
+           help='Filter by regex of the notification name, , e.g. ".*substring.*"')
 @utils.arg('--file', metavar='<FILE>',
            help='Output file (default to stdout).')
 def do_notification_export(mc, args):
@@ -685,8 +686,8 @@ def do_notification_export(mc, args):
 
         nlist = []
         notifications = mc.notifications.list()
-        if args.match_prefix:
-            notifications = filter(lambda a: a['name'].startswith(args.match_prefix), notifications)
+        if args.match:
+            notifications = filter(lambda a: re.match(args.match, a['name'], re.IGNORECASE), notifications)
 
         for nref in notifications:  # load and replace notification reference IDs with names
             notf = mc.notifications.get(notification_id=nref['id'])
@@ -1117,8 +1118,8 @@ def _id_to_name(ids, mappings):
     return map(lambda a: a['name'], filter(lambda a: a['id'] in ids, mappings))
 
 
-@utils.arg('--match_prefix', metavar='<MATCH_PREFIX>',
-           help='Filter by prefix of the alarm definition name.')
+@utils.arg('--match',metavar='<MATCH>',
+           help='Filter by regex of the alarm definition name, e.g. , e.g. ".*substring.*"')
 @utils.arg('--file', metavar='<FILE>',
            help='Output file (default to stdout).')
 def do_alarm_definition_export(mc, args):
@@ -1132,8 +1133,8 @@ def do_alarm_definition_export(mc, args):
         listed_adefs = []
         all_notifications = mc.notifications.list()
         alarm_defs = mc.alarm_definitions.list()
-        if args.match_prefix:
-            alarm_defs = filter(lambda a: a['name'].startswith(args.match_prefix), alarm_defs)
+        if args.match:
+            alarm_defs = filter(lambda a: re.match(args.match,  a['name']), alarm_defs, re.IGNORECASE)
 
         for aref in alarm_defs:  # load and replace notification reference IDs with names
             adef = mc.alarm_definitions.get(alarm_id=aref['id'])
@@ -1155,8 +1156,9 @@ def _get_alarm_definitions_by_name(mc, name):
     return filter(lambda a: a['name'] == name, mc.alarm_definitions.list())
 
 
-@utils.arg('--match_prefix', metavar='<MATCH_PREFIX>',
-           help='Filter by prefix of the alarm definition name.')
+@utils.arg('--match',metavar='<MATCH>',
+           help='Filter by the alarm definition name with a regular expression, e.g. ".*substring.*" to search for any'
+                ' name containing the string "substring"')
 @utils.arg('--file', metavar='<FILE>',
            help='Input file (default to stdin).')
 def do_alarm_definition_import(mc, args):
@@ -1170,8 +1172,8 @@ def do_alarm_definition_import(mc, args):
         alarm_defs = json.load(data_file)
 
         all_notifications = mc.notifications.list()
-        if args.match_prefix:
-            alarm_defs = filter(lambda a: a['name'].startswith(args.match_prefix), alarm_defs)
+        if args.match:
+            alarm_defs = filter(lambda a: re.match(args.match, a['name'], re.IGNORECASE), alarm_defs)
 
         for adef in alarm_defs:  # replace notification reference names with IDs
             adef['alarm_actions'] = _name_to_id(adef['alarm_actions'], all_notifications)
