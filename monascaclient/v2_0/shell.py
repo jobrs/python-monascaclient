@@ -649,7 +649,7 @@ def do_notification_import(mc, args):
 
         notifications = json.load(data_file)
         if args.match:
-            notifications = filter(lambda a: re.match(args.match, a['name'], re.IGNORECASE), notifications)
+            notifications = filter(lambda a: re.match(args.match, a['name'], flags=re.IGNORECASE), notifications)
         for notf in notifications:  # replace notification reference names with IDs
             notf.pop('id', None)  # remove so that it is not ignored
             notf.pop('links', None)  # ignore
@@ -687,7 +687,7 @@ def do_notification_export(mc, args):
         nlist = []
         notifications = mc.notifications.list()
         if args.match:
-            notifications = filter(lambda a: re.match(args.match, a['name'], re.IGNORECASE), notifications)
+            notifications = filter(lambda a: re.match(args.match, a['name'], flags=re.IGNORECASE), notifications)
 
         for nref in notifications:  # load and replace notification reference IDs with names
             notf = mc.notifications.get(notification_id=nref['id'])
@@ -1134,7 +1134,7 @@ def do_alarm_definition_export(mc, args):
         all_notifications = mc.notifications.list()
         alarm_defs = mc.alarm_definitions.list()
         if args.match:
-            alarm_defs = filter(lambda a: re.match(args.match,  a['name']), alarm_defs, re.IGNORECASE)
+            alarm_defs = filter(lambda a: re.match(args.match,  a['name'], flags=re.IGNORECASE), alarm_defs)
 
         for aref in alarm_defs:  # load and replace notification reference IDs with names
             adef = mc.alarm_definitions.get(alarm_id=aref['id'])
@@ -1173,7 +1173,7 @@ def do_alarm_definition_import(mc, args):
 
         all_notifications = mc.notifications.list()
         if args.match:
-            alarm_defs = filter(lambda a: re.match(args.match, a['name'], re.IGNORECASE), alarm_defs)
+            alarm_defs = filter(lambda a: re.match(args.match, a['name'], flags=re.IGNORECASE), alarm_defs)
 
         for adef in alarm_defs:  # replace notification reference names with IDs
             adef['alarm_actions'] = _name_to_id(adef['alarm_actions'], all_notifications)
