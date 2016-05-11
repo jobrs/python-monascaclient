@@ -80,6 +80,7 @@ When using Keystone to obtain the token and endpoint::
   export OS_PASSWORD=
   export OS_USER_DOMAIN_NAME=
   export OS_PROJECT_NAME=
+  export OS_PROJECT_DOMAIN_NAME=
   export OS_AUTH_URL=
   export OS_REGION_NAME=
 
@@ -102,7 +103,7 @@ You'll find complete documentation on the shell by running
                [--os-password OS_PASSWORD] [--os-project-id OS_PROJECT_ID]
                [--os-user-domain-id OS_USER_DOMAIN_ID] [--os-user-domain-name OS_USER_DOMAIN_NAME]
                [--os-project-name OS_PROJECT_NAME]
-               [--os-domain-id OS_DOMAIN_ID] [--os-domain-name OS_DOMAIN_NAME]
+               [--os-project-domain-id OS_PROJECT_DOMAIN_ID] [--os-project-domain-name OS_PROJECT_DOMAIN_NAME]
                [--os-auth-url OS_AUTH_URL] [--os-region-name OS_REGION_NAME]
                [--os-auth-token OS_AUTH_TOKEN] [--os-no-client-auth]
                [--monasca-api-url MONASCA_API_URL]
@@ -117,6 +118,8 @@ You'll find complete documentation on the shell by running
     <subcommand>
       alarm-definition-create  Create an alarm definition.
       alarm-definition-delete  Delete the alarm definition.
+      alarm-definition-export  Export multiple alarm definitions to stdout or file (JSON)
+      alarm-definition-import  Import multiple alarm definitions from stdin or file (JSON)
       alarm-definition-list    List alarm definitions for this tenant.
       alarm-definition-patch   Patch the alarm definition.
       alarm-definition-show    Describe the alarm definition.
@@ -131,10 +134,13 @@ You'll find complete documentation on the shell by running
       measurement-list         List measurements for the specified metric.
       metric-create            Create metric.
       metric-create-raw        Create metric from raw json body.
-      metric-list              List metrics for this tenant.
+      metric-list              List measurement series for this tenant.
+      metric-name-list         List metric names for this tenant.
       metric-statistics        List measurement statistics for the specified metric.
       notification-create      Create notification.
       notification-delete      Delete notification.
+      notification-export      Export multiple notifications to stdout or file (JSON)
+      notification-import      Import multiple notifications from stdin or file (JSON)
       notification-list        List notifications for this tenant.
       notification-show        Describe the notification.
       notification-update      Update notification.
