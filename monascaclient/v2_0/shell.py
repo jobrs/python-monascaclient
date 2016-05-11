@@ -35,6 +35,7 @@ enabled_types = ['True', 'true', 'False', 'false']
 group_by_types = ['alarm_definition_id', 'name', 'state', 'severity',
                   'link', 'lifecycle_state', 'metric_name',
                   'dimension_name', 'dimension_value']
+allowed_notification_sort_by = {'id', 'name', 'type', 'address', 'created_at', 'updated_at'}
 allowed_alarm_sort_by = {'alarm_id', 'alarm_definition_id', 'state', 'severity', 'lifecycle_state', 'link',
                          'state_updated_timestamp', 'updated_timestamp', 'created_timestamp'}
 allowed_definition_sort_by = {'id', 'name', 'severity', 'updated_at', 'created_at'}
@@ -108,6 +109,46 @@ def do_metric_create_raw(mc, args):
         print('Successfully created metric')
 
 
+@utils.arg('--dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
+           help='key value pair used to specify a metric dimension. '
+           'This can be specified multiple times, or once with parameters '
+           'separated by a comma. '
+           'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
+           'that confuse the CLI parser.',
+           action='append')
+@utils.arg('--offset', metavar='<OFFSET LOCATION>',
+           help='The offset used to paginate the return data.')
+@utils.arg('--limit', metavar='<RETURN LIMIT>',
+           help='The amount of data to be returned up to the API maximum limit.')
+@utils.arg('--tenant-id', metavar='<TENANT_ID>',
+           help="Retrieve data for the specified tenant/project id instead of "
+                "the tenant/project from the user's Keystone credentials.")
+def do_metric_name_list(mc, args):
+    fields = {}
+    if args.dimensions:
+        fields['dimensions'] = utils.format_dimensions_query(args.dimensions)
+    if args.limit:
+        fields['limit'] = args.limit
+    if args.offset:
+        fields['offset'] = args.offset
+    if args.tenant_id:
+        fields['tenant_id'] = args.tenant_id
+
+    try:
+        metric_names = mc.metrics.list_names(**fields)
+    except exc.HTTPException as he:
+        raise exc.CommandError(
+            'HTTPException code=%s message=%s' %
+            (he.code, he.message))
+
+    if args.json:
+        print(utils.json_formatter(metric_names))
+        return
+
+    if isinstance(metric_names, list):
+        utils.print_list(metric_names, ['Name'], formatters={'Name': lambda x: x['name']})
+
+
 @utils.arg('--name', metavar='<METRIC_NAME>',
            help='Name of the metric to list.')
 @utils.arg('--dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
@@ -125,6 +166,9 @@ def do_metric_create_raw(mc, args):
            help='The offset used to paginate the return data.')
 @utils.arg('--limit', metavar='<RETURN LIMIT>',
            help='The amount of data to be returned up to the API maximum limit.')
+@utils.arg('--tenant-id', metavar='<TENANT_ID>',
+           help="Retrieve data for the specified tenant/project id instead of "
+                "the tenant/project from the user's Keystone credentials.")
 def do_metric_list(mc, args):
     '''List metrics for this tenant.'''
     fields = {}
@@ -141,6 +185,8 @@ def do_metric_list(mc, args):
         fields['start_time'] = args.starttime
     if args.endtime:
         fields['end_time'] = args.endtime
+    if args.tenant_id:
+        fields['tenant_id'] = args.tenant_id
 
     try:
         metric = mc.metrics.list(**fields)
@@ -330,6 +376,9 @@ def format_metric_dimensions(metrics):
 @utils.arg('--merge_metrics', action='store_const',
            const=True,
            help='Merge multiple metrics into a single result.')
+@utils.arg('--tenant-id', metavar='<TENANT_ID>',
+           help="Retrieve data for the specified tenant/project id instead of "
+                "the tenant/project from the user's Keystone credentials.")
 def do_measurement_list(mc, args):
     '''List measurements for the specified metric.'''
     fields = {}
@@ -347,6 +396,8 @@ def do_measurement_list(mc, args):
         fields['offset'] = args.offset
     if args.merge_metrics:
         fields['merge_metrics'] = args.merge_metrics
+    if args.tenant_id:
+        fields['tenant_id'] = args.tenant_id
 
     try:
         metric = mc.metrics.list_measurements(**fields)
@@ -404,6 +455,9 @@ def do_measurement_list(mc, args):
 @utils.arg('--merge_metrics', action='store_const',
            const=True,
            help='Merge multiple metrics into a single result.')
+@utils.arg('--tenant-id', metavar='<TENANT_ID>',
+           help="Retrieve data for the specified tenant/project id instead of "
+                "the tenant/project from the user's Keystone credentials.")
 def do_metric_statistics(mc, args):
     '''List measurement statistics for the specified metric.'''
     statistic_types = ['AVG', 'MIN', 'MAX', 'COUNT', 'SUM']
@@ -431,6 +485,8 @@ def do_metric_statistics(mc, args):
         fields['offset'] = args.offset
     if args.merge_metrics:
         fields['merge_metrics'] = args.merge_metrics
+    if args.tenant_id:
+        fields['tenant_id'] = args.tenant_id
 
     try:
         metric = mc.metrics.list_statistics(**fields)
@@ -535,6 +591,11 @@ def do_notification_show(mc, args):
         utils.print_dict(notification, formatters=formatters)
 
 
+@utils.arg('--sort-by', metavar='<SORT BY FIELDS>',
+           help='Fields to sort by as a comma separated list. Valid values are id, '
+                'name, type, address, created_at, updated_at. '
+                'Fields may be followed by "asc" or "desc", ex "address desc", '
+                'to set the direction of sorting.')
 @utils.arg('--offset', metavar='<OFFSET LOCATION>',
            help='The offset used to paginate the return data.')
 @utils.arg('--limit', metavar='<RETURN LIMIT>',
@@ -546,6 +607,19 @@ def do_notification_list(mc, args):
         fields['limit'] = args.limit
     if args.offset:
         fields['offset'] = args.offset
+    if args.sort_by:
+        sort_by = args.sort_by.split(',')
+        for field in sort_by:
+            field_values = field.lower().split()
+            if len(field_values) > 2:
+                print("Invalid sort_by value {}".format(field))
+            if field_values[0] not in allowed_notification_sort_by:
+                print("Sort-by field name {} is not in [{}]".format(field_values[0],
+                                                                    allowed_notification_sort_by))
+                return
+            if len(field_values) > 1 and field_values[1] not in ['asc', 'desc']:
+                print("Invalid value {}, must be asc or desc".format(field_values[1]))
+        fields['sort_by'] = args.sort_by
 
     try:
         notification = mc.notifications.list(**fields)
@@ -710,8 +784,9 @@ def do_notification_export(mc, args):
            help='The alarm expression to evaluate. Quoted.')
 @utils.arg('--severity', metavar='<SEVERITY>',
            help='Severity is one of [LOW, MEDIUM, HIGH, CRITICAL].')
-@utils.arg('--match-by', metavar='<DIMENSION_KEY1,DIMENSION_KEY2,...>',
-           help='The metric dimensions to match to the alarm dimensions. '
+@utils.arg('--match-by', metavar='<MATCH_BY_DIMENSION_KEY1,MATCH_BY_DIMENSION_KEY2,'
+                                 '...>',
+           help='The metric dimensions to use to create unique alarms. '
            'One or more dimension key names separated by a comma. '
            'Key names need quoting when they contain special chars [&,(,),{,},>,<] '
            'that confuse the CLI parser.')
@@ -803,9 +878,9 @@ def do_alarm_definition_show(mc, args):
            help='Severity is one of ["LOW", "MEDIUM", "HIGH", "CRITICAL"].')
 @utils.arg('--sort-by', metavar='<SORT BY FIELDS>',
            help='Fields to sort by as a comma separated list. Valid values are id, '
-           'name, severity, updated_timestamp, created_timestamp. '
-           'Fields may be followed by "asc" or "desc", ex "severity desc", '
-           'to set the direction of sorting.')
+                'name, severity, created_at, updated_at. '
+                'Fields may be followed by "asc" or "desc", ex "severity desc", '
+                'to set the direction of sorting.')
 @utils.arg('--offset', metavar='<OFFSET LOCATION>',
            help='The offset used to paginate the return data.')
 @utils.arg('--limit', metavar='<RETURN LIMIT>',
@@ -889,20 +964,20 @@ def do_alarm_definition_delete(mc, args):
            help='Description of the alarm.')
 @utils.arg('expression', metavar='<EXPRESSION>',
            help='The alarm expression to evaluate. Quoted.')
-@utils.arg('alarm-actions', metavar='<ALARM-NOTIFICATION-ID1,ALARM-NOTIFICATION-ID2,...>',
+@utils.arg('alarm_actions', metavar='<ALARM-NOTIFICATION-ID1,ALARM-NOTIFICATION-ID2,...>',
            help='The notification method(s) to use when an alarm state is ALARM '
-           'as a comma separated list.')
-@utils.arg('ok-actions', metavar='<OK-NOTIFICATION-ID1,OK-NOTIFICATION-ID2,...>',
+                'as a comma separated list.')
+@utils.arg('ok_actions', metavar='<OK-NOTIFICATION-ID1,OK-NOTIFICATION-ID2,...>',
            help='The notification method(s) to use when an alarm state is OK '
            'as a comma separated list.')
-@utils.arg('undetermined-actions',
+@utils.arg('undetermined_actions',
            metavar='<UNDETERMINED-NOTIFICATION-ID1,UNDETERMINED-NOTIFICATION-ID2,...>',
            help='The notification method(s) to use when an alarm state is UNDETERMINED '
            'as a comma separated list.')
 @utils.arg('actions_enabled', metavar='<ACTIONS-ENABLED>',
-           help='The actions-enabled boolean is one of [true,false].')
-@utils.arg('match-by', metavar='<DIMENSION_KEY1,DIMENSION_KEY2,...>',
-           help='The metric dimensions to match to the alarm dimensions. '
+           help='The actions-enabled boolean is one of [true,false]')
+@utils.arg('match_by', metavar='<MATCH_BY_DIMENSION_KEY1,MATCH_BY_DIMENSION_KEY2,...>',
+           help='The metric dimensions to use to create unique alarms. '
            'One or more dimension key names separated by a comma. '
            'Key names need quoting when they contain special chars [&,(,),{,},>,<] '
            'that confuse the CLI parser.')
