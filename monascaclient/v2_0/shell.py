@@ -24,7 +24,9 @@ import sys
 
 from monascaclient.common import utils
 import monascaclient.exc as exc
-from monascaclient.openstack.common import jsonutils
+
+from oslo_serialization import jsonutils
+from six.moves import xrange
 
 log = logging.getLogger(__name__)
 
@@ -376,6 +378,8 @@ def format_metric_dimensions(metrics):
 @utils.arg('--merge_metrics', action='store_const',
            const=True,
            help='Merge multiple metrics into a single result.')
+@utils.arg('--group_by', metavar='<KEY1,KEY2,...>',
+           help='Select which keys to use for grouping. A \'*\' groups by all keys.')
 @utils.arg('--tenant-id', metavar='<TENANT_ID>',
            help="Retrieve data for the specified tenant/project id instead of "
                 "the tenant/project from the user's Keystone credentials.")
@@ -396,6 +400,8 @@ def do_measurement_list(mc, args):
         fields['offset'] = args.offset
     if args.merge_metrics:
         fields['merge_metrics'] = args.merge_metrics
+    if args.group_by:
+        fields['group_by'] = args.group_by
     if args.tenant_id:
         fields['tenant_id'] = args.tenant_id
 
@@ -455,6 +461,8 @@ def do_measurement_list(mc, args):
 @utils.arg('--merge_metrics', action='store_const',
            const=True,
            help='Merge multiple metrics into a single result.')
+@utils.arg('--group_by', metavar='<KEY1,KEY2,...>',
+           help='Select which keys to use for grouping. A \'*\' groups by all keys.')
 @utils.arg('--tenant-id', metavar='<TENANT_ID>',
            help="Retrieve data for the specified tenant/project id instead of "
                 "the tenant/project from the user's Keystone credentials.")
@@ -485,6 +493,8 @@ def do_metric_statistics(mc, args):
         fields['offset'] = args.offset
     if args.merge_metrics:
         fields['merge_metrics'] = args.merge_metrics
+    if args.group_by:
+        fields['group_by'] = args.group_by
     if args.tenant_id:
         fields['tenant_id'] = args.tenant_id
 
@@ -990,17 +1000,16 @@ def do_alarm_definition_update(mc, args):
     fields['name'] = args.name
     fields['description'] = args.description
     fields['expression'] = args.expression
-    fields['alarm_actions'] = args.alarm_actions.split(',')
-    fields['ok_actions'] = args.ok_actions.split(',')
-    fields['undetermined_actions'] = args.undetermined_actions.split(',')
+    fields['alarm_actions'] = _arg_split_patch_update(args.alarm_actions)
+    fields['ok_actions'] = _arg_split_patch_update(args.ok_actions)
+    fields['undetermined_actions'] = _arg_split_patch_update(args.undetermined_actions)
     if args.actions_enabled not in enabled_types:
         errmsg = 'Invalid value, not one of [' + \
             ', '.join(enabled_types) + ']'
         print(errmsg)
         return
     fields['actions_enabled'] = args.actions_enabled in ['true', 'True']
-    fields['match_by'] = args.match_by.split(',')
-
+    fields['match_by'] = _arg_split_patch_update(args.match_by)
     if not _validate_severity(args.severity):
         return
     fields['severity'] = args.severity
@@ -1049,11 +1058,11 @@ def do_alarm_definition_patch(mc, args):
     if args.expression:
         fields['expression'] = args.expression
     if args.alarm_actions:
-        fields['alarm_actions'] = args.alarm_actions
+        fields['alarm_actions'] = _arg_split_patch_update(args.alarm_actions, patch=True)
     if args.ok_actions:
-        fields['ok_actions'] = args.ok_actions
+        fields['ok_actions'] = _arg_split_patch_update(args.ok_actions, patch=True)
     if args.undetermined_actions:
-        fields['undetermined_actions'] = args.undetermined_actions
+        fields['undetermined_actions'] = _arg_split_patch_update(args.undetermined_actions, patch=True)
     if args.actions_enabled:
         if args.actions_enabled not in enabled_types:
             errmsg = 'Invalid value, not one of [' + \
@@ -1568,3 +1577,13 @@ def _translate_starttime(args):
         utc = str(datetime.datetime.utcfromtimestamp(deltaT))
         utc = utc.replace(" ", "T")[:-7] + 'Z'
         args.starttime = utc
+
+
+def _arg_split_patch_update(arg, patch=False):
+    if patch:
+        arg = ','.join(arg)
+    if not arg or arg == "[]":
+        arg_split = []
+    else:
+        arg_split = arg.split(',')
+    return arg_split
