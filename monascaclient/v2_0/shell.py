@@ -18,9 +18,8 @@ import json
 import logging
 import numbers
 import re
-import time
-
 import sys
+import time
 
 from monascaclient.common import utils
 import monascaclient.exc as exc
