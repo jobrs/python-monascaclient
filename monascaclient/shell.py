@@ -395,9 +395,11 @@ class MonascaShell(object):
             if args.os_project_id:
                 kwargs['project_id'] = args.os_project_id
             if args.os_domain_name:
-                kwargs['domain_name'] = args.os_domain_name
+                kwargs['domain_name'] = args.os_project_domain_name if args.os_project_domain_name \
+                    else args.os_domain_name
             if args.os_domain_id:
-                kwargs['domain_id'] = args.os_domain_id
+                kwargs['domain_id'] = args.os_project_domain_id if args.os_project_domain_id \
+                    else args.os_domain_id
 
             if not endpoint:
                 endpoint = _ksclient.monasca_url
