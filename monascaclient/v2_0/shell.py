@@ -111,46 +111,6 @@ def do_metric_create_raw(mc, args):
         print('Successfully created metric')
 
 
-@utils.arg('--dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
-           help='key value pair used to specify a metric dimension. '
-           'This can be specified multiple times, or once with parameters '
-           'separated by a comma. '
-           'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
-           'that confuse the CLI parser.',
-           action='append')
-@utils.arg('--offset', metavar='<OFFSET LOCATION>',
-           help='The offset used to paginate the return data.')
-@utils.arg('--limit', metavar='<RETURN LIMIT>',
-           help='The amount of data to be returned up to the API maximum limit.')
-@utils.arg('--tenant-id', metavar='<TENANT_ID>',
-           help="Retrieve data for the specified tenant/project id instead of "
-                "the tenant/project from the user's Keystone credentials.")
-def do_metric_name_list(mc, args):
-    fields = {}
-    if args.dimensions:
-        fields['dimensions'] = utils.format_dimensions_query(args.dimensions)
-    if args.limit:
-        fields['limit'] = args.limit
-    if args.offset:
-        fields['offset'] = args.offset
-    if args.tenant_id:
-        fields['tenant_id'] = args.tenant_id
-
-    try:
-        metric_names = mc.metrics.list_names(**fields)
-    except exc.HTTPException as he:
-        raise exc.CommandError(
-            'HTTPException code=%s message=%s' %
-            (he.code, he.message))
-
-    if args.json:
-        print(utils.json_formatter(metric_names))
-        return
-
-    if isinstance(metric_names, list):
-        utils.print_list(metric_names, ['Name'], formatters={'Name': lambda x: x['name']})
-
-
 @utils.arg('--name', metavar='<METRIC_NAME>',
            help='Name of the metric to list.')
 @utils.arg('--dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
@@ -719,7 +679,7 @@ def _get_notifications_by_name(mc, name):
     return filter(lambda a: a['name'] == name, mc.notifications.list())
 
 
-@utils.arg('--match',metavar='<MATCH>',
+@utils.arg('--match', metavar='<MATCH>',
            help='Filter by regex of the notification name, e.g. ".*substring.*"')
 @utils.arg('--file', metavar='<FILE>',
            help='Input file (default to stdin).')
@@ -756,7 +716,7 @@ def do_notification_import(mc, args):
         print('Successfully imported notifications')
 
 
-@utils.arg('--match',metavar='<MATCH>',
+@utils.arg('--match', metavar='<MATCH>',
            help='Filter by regex of the notification name, , e.g. ".*substring.*"')
 @utils.arg('--file', metavar='<FILE>',
            help='Output file (default to stdout).')
@@ -1202,7 +1162,7 @@ def _id_to_name(ids, mappings):
     return map(lambda a: a['name'], filter(lambda a: a['id'] in ids, mappings))
 
 
-@utils.arg('--match',metavar='<MATCH>',
+@utils.arg('--match', metavar='<MATCH>',
            help='Filter by regex of the alarm definition name, e.g. , e.g. ".*substring.*"')
 @utils.arg('--file', metavar='<FILE>',
            help='Output file (default to stdout).')
@@ -1218,7 +1178,7 @@ def do_alarm_definition_export(mc, args):
         all_notifications = mc.notifications.list()
         alarm_defs = mc.alarm_definitions.list()
         if args.match:
-            alarm_defs = filter(lambda a: re.match(args.match,  a['name'], flags=re.IGNORECASE), alarm_defs)
+            alarm_defs = filter(lambda a: re.match(args.match, a['name'], flags=re.IGNORECASE), alarm_defs)
 
         for aref in alarm_defs:  # load and replace notification reference IDs with names
             adef = mc.alarm_definitions.get(alarm_id=aref['id'])
@@ -1240,7 +1200,7 @@ def _get_alarm_definitions_by_name(mc, name):
     return filter(lambda a: a['name'] == name, mc.alarm_definitions.list())
 
 
-@utils.arg('--match',metavar='<MATCH>',
+@utils.arg('--match', metavar='<MATCH>',
            help='Filter by the alarm definition name with a regular expression, e.g. ".*substring.*" to search for any'
                 ' name containing the string "substring"')
 @utils.arg('--file', metavar='<FILE>',

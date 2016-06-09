@@ -52,7 +52,7 @@ class KSClient(object):
             if kwargs.get('project_domain_name'):
                 kc_args['project_domain_name'] = kwargs.get('project_domain_name')
             elif kwargs.get('domain_name'):
-                kc_args['project_domain_name'] = kwargs.get('domain_name') # backwards compat to 1.0.30 API
+                kc_args['project_domain_name'] = kwargs.get('domain_name')  # backwards compat to 1.0.30 API
             if kwargs.get('project_domain_id'):
                 kc_args['project_domain_id'] = kwargs.get('project_domain_id')
             elif kwargs.get('domain_id'):
