@@ -1,4 +1,4 @@
-# (C) Copyright 2014-2016 Hewlett Packard Enterprise Development Company LP
+# (C) Copyright 2014-2016 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -207,26 +207,6 @@ class ShellTestMonascaCommands(ShellBase):
         for argstr in argstrings:
             self.assertRaises(SystemExit, _shell.main, argstr.split())
 
-    def test_bad_notifications_create_type_subcommand(self):
-        self._script_keystone_client()
-        argstrings = [
-            'notification-create email1 DOG metric1@hp.com',
-        ]
-        self.m.ReplayAll()
-        for argstr in argstrings:
-            retvalue = self.shell(argstr)
-            self.assertRegexpMatches(retvalue, "^Invalid type")
-
-    def test_notifications_create_type_sms(self):
-        self._script_keystone_client()
-        argstrings = [
-            'notification-create sms1 SMS myphonenumber',
-        ]
-        self.m.ReplayAll()
-        for argstr in argstrings:
-            retvalue = self.shell(argstr)
-            self.assertRegexpMatches(retvalue, "^Invalid type")
-
     def test_good_notifications_create_subcommand(self):
         self._script_keystone_client()
 
@@ -279,6 +259,66 @@ class ShellTestMonascaCommands(ShellBase):
             retvalue = self.shell(argstr)
             self.assertRegexpMatches(retvalue, "id")
 
+    def test_good_notifications_patch(self):
+        self._script_keystone_client()
+
+        id_str = '0495340b-58fd-4e1c-932b-5e6f9cc96490'
+        resp = fakes.FakeHTTPResponse(
+            201,
+            'Created',
+            {'location': 'http://no.where/v2.0/notification-methods'},
+            None)
+        http.HTTPClient.json_request(
+            'PATCH',
+            '/notification-methods/' + id_str,
+            data={'type': 'EMAIL',
+                  'address': 'john.doe@hpe.com',
+                  'period': 0},
+            headers={'X-Auth-Key': 'password',
+                     'X-Auth-User': 'username'}).AndReturn((resp, 'id'))
+        self.m.ReplayAll()
+
+        argstring = 'notification-patch {0} --type EMAIL --address' \
+                    ' john.doe@hpe.com --period 0'.format(id_str)
+        retvalue = self.shell(argstring)
+        self.assertRegexpMatches(retvalue, "id")
+
+    def test_bad_notifications_patch(self):
+        self._script_keystone_client()
+
+        id_str = '0495340b-58fd-4e1c-932b-5e6f9cc96490'
+        argstring = 'notification-patch {0} --type EMAIL --address' \
+                    ' john.doe@hpe.com --period 60'.format(id_str)
+        self.m.ReplayAll()
+
+        retvalue = self.shell(argstring)
+        self.assertRegexpMatches(retvalue, "^Invalid")
+
+    def test_good_notifications_update(self):
+        self._script_keystone_client()
+
+        id_str = '0495340b-58fd-4e1c-932b-5e6f9cc96491'
+        resp = fakes.FakeHTTPResponse(
+            201,
+            'Created',
+            {'location': 'http://no.where/v2.0/notification-methods'},
+            None)
+        http.HTTPClient.json_request(
+            'PUT',
+            '/notification-methods/' + id_str,
+            data={'name': 'notification_updated_name',
+                  'type': 'EMAIL',
+                  'address': 'john.doe@hpe.com',
+                  'period': 0},
+            headers={'X-Auth-Key': 'password',
+                     'X-Auth-User': 'username'}).AndReturn((resp, 'id'))
+        self.m.ReplayAll()
+
+        argstring = 'notification-update {0} notification_updated_name ' \
+                    'EMAIL john.doe@hpe.com 0'.format(id_str)
+        retvalue = self.shell(argstring)
+        self.assertRegexpMatches(retvalue, "id")
+
     def test_good_alarm_definition_update(self):
         self._script_keystone_client()
 
@@ -319,3 +359,23 @@ class ShellTestMonascaCommands(ShellBase):
         argstring = " ".join(args)
         retvalue = self.shell(argstring)
         self.assertRegexpMatches(retvalue, "id")
+
+    def test_notifications_types_list(self):
+        self._script_keystone_client()
+
+        resp_body = [{"type": "WEBHOOK"}, {"type": "EMAIL"}, {"type": "PAGERDUTY"}]
+        resp = fakes.FakeHTTPResponse(
+            status_code=200,
+            content=resp_body)
+        http.HTTPClient.json_request(
+            'GET',
+            '/notification-methods/types',
+            headers={'X-Auth-Key': 'password',
+                     'X-Auth-User': 'username'}).AndReturn(((resp, resp_body)))
+
+        self.m.ReplayAll()
+
+        argstrings = ["notification-type-list"]
+
+        retvalue = self.shell("".join(argstrings))
+        self.assertRegexpMatches(retvalue, "types")

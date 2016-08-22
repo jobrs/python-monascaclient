@@ -1,6 +1,0 @@
-python-monclient (1.0.30-%BUILD_ID%) trusty; urgency=low
-
-  * Initial Package creation
-
- -- Tim Kuhlman <tim.kuhlman@hp.com>  Mon, 24 Mar 2014 04:12:44 -0600
-

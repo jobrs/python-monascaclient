@@ -1,4 +1,4 @@
-# (C) Copyright 2014-2016 Hewlett Packard Enterprise Development Company LP
+# (C) Copyright 2014-2016 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,8 +37,11 @@ group_by_types = ['alarm_definition_id', 'name', 'state', 'severity',
                   'link', 'lifecycle_state', 'metric_name',
                   'dimension_name', 'dimension_value']
 allowed_notification_sort_by = {'id', 'name', 'type', 'address', 'created_at', 'updated_at'}
-allowed_alarm_sort_by = {'alarm_id', 'alarm_definition_id', 'state', 'severity', 'lifecycle_state', 'link',
-                         'state_updated_timestamp', 'updated_timestamp', 'created_timestamp'}
+allowed_alarm_sort_by = {'alarm_id', 'alarm_definition_id',
+                         'alarm_definition_name', 'state', 'severity',
+                         'lifecycle_state', 'link',
+                         'state_updated_timestamp', 'updated_timestamp',
+                         'created_timestamp'}
 allowed_definition_sort_by = {'id', 'name', 'severity', 'updated_at', 'created_at'}
 
 # Notification valid types
@@ -130,8 +133,8 @@ def do_metric_create_raw(mc, args):
 @utils.arg('--tenant-id', metavar='<TENANT_ID>',
            help="Retrieve data for the specified tenant/project id instead of "
                 "the tenant/project from the user's Keystone credentials.")
-def do_metric_list(mc, args):
-    '''List metrics for this tenant.'''
+def do_metric_name_list(mc, args):
+    '''List names of metrics.'''
     fields = {}
     if args.name:
         fields['name'] = args.name
@@ -431,8 +434,8 @@ def do_metric_statistics(mc, args):
     statlist = args.statistics.split(',')
     for stat in statlist:
         if stat.upper() not in statistic_types:
-            errmsg = 'Invalid type, not one of [' + \
-                ', '.join(statistic_types) + ']'
+            errmsg = ('Invalid type, not one of [' +
+                      ', '.join(statistic_types) + ']')
             print(errmsg)
             return
     fields = {}
@@ -507,23 +510,32 @@ def do_metric_statistics(mc, args):
                 formatters=formatters)
 
 
+def _validate_notification_period(period, notification_type):
+    if notification_type != 'WEBHOOK' and period != 0:
+        print("Invalid period, can only be non zero for webhooks")
+        return False
+    return True
+
+
 @utils.arg('name', metavar='<NOTIFICATION_NAME>',
            help='Name of the notification to create.')
 @utils.arg('type', metavar='<TYPE>',
            help='The notification type. Type must be EMAIL, WEBHOOK, or PAGERDUTY.')
 @utils.arg('address', metavar='<ADDRESS>',
            help='A valid EMAIL Address, URL, or SERVICE KEY.')
+@utils.arg('--period', metavar='<PERIOD>', type=int, default=0,
+           help='A period for the notification method. Can only be non zero with webhooks')
 def do_notification_create(mc, args):
     '''Create notification.'''
-    if args.type.upper() not in notification_types:
-        errmsg = 'Invalid type, not one of [' + \
-            ', '.join(notification_types) + ']'
-        print(errmsg)
-        return
+
     fields = {}
     fields['name'] = args.name
     fields['type'] = args.type
     fields['address'] = args.address
+    if args.period:
+        if not _validate_notification_period(args.period, args.type.upper()):
+            return
+        fields['period'] = args.period
     try:
         notification = mc.notifications.create(**fields)
     except exc.HTTPException as he:
@@ -535,7 +547,7 @@ def do_notification_create(mc, args):
 
 
 @utils.arg('id', metavar='<NOTIFICATION_ID>',
-           help='The ID of the notification. If not specified returns all.')
+           help='The ID of the notification.')
 def do_notification_show(mc, args):
     '''Describe the notification.'''
     fields = {}
@@ -555,6 +567,7 @@ def do_notification_show(mc, args):
             'id': utils.json_formatter,
             'type': utils.json_formatter,
             'address': utils.json_formatter,
+            'period': utils.json_formatter,
             'links': utils.format_dictlist,
         }
         utils.print_dict(notification, formatters=formatters)
@@ -600,12 +613,13 @@ def do_notification_list(mc, args):
         if args.json:
             print(utils.json_formatter(notification))
             return
-        cols = ['name', 'id', 'type', 'address']
+        cols = ['name', 'id', 'type', 'address', 'period']
         formatters = {
             'name': lambda x: x['name'],
             'id': lambda x: x['id'],
             'type': lambda x: x['type'],
             'address': lambda x: x['address'],
+            'period': lambda x: x['period'],
         }
         if isinstance(notification, list):
 
@@ -643,18 +657,19 @@ def do_notification_delete(mc, args):
            help='The notification type. Type must be either EMAIL, WEBHOOK, or PAGERDUTY.')
 @utils.arg('address', metavar='<ADDRESS>',
            help='A valid EMAIL Address, URL, or SERVICE KEY.')
+@utils.arg('period', metavar='<PERIOD>', type=int,
+           help='A period for the notification method. Can only be non zero with webhooks')
 def do_notification_update(mc, args):
     '''Update notification.'''
     fields = {}
     fields['notification_id'] = args.id
     fields['name'] = args.name
-    if args.type.upper() not in notification_types:
-        errmsg = 'Invalid type, not one of [' + \
-                 ', '.join(state_types) + ']'
-        print(errmsg)
-        return
+
     fields['type'] = args.type
     fields['address'] = args.address
+    if not _validate_notification_period(args.period, args.type.upper()):
+        return
+    fields['period'] = args.period
     try:
         notification = mc.notifications.update(**fields)
     except exc.HTTPException as he:
@@ -665,10 +680,45 @@ def do_notification_update(mc, args):
         print(jsonutils.dumps(notification, indent=2))
 
 
+@utils.arg('id', metavar='<NOTIFICATION_ID>',
+           help='The ID of the notification.')
+@utils.arg('--name', metavar='<NOTIFICATION_NAME>',
+           help='Name of the notification.')
+@utils.arg('--type', metavar='<TYPE>',
+           help='The notification type. Type must be either EMAIL, WEBHOOK, or PAGERDUTY.')
+@utils.arg('--address', metavar='<ADDRESS>',
+           help='A valid EMAIL Address, URL, or SERVICE KEY.')
+@utils.arg('--period', metavar='<PERIOD>', type=int,
+           help='A period for the notification method. Can only be non zero with webhooks')
+def do_notification_patch(mc, args):
+    '''Patch notification.'''
+    fields = {}
+    fields['notification_id'] = args.id
+    if args.name:
+        fields['name'] = args.name
+
+    fields['type'] = args.type
+    if args.address:
+        fields['address'] = args.address
+    if args.period or args.period == 0:
+        if args.type and not _validate_notification_period(
+                args.period, args.type.upper()):
+            return
+        fields['period'] = args.period
+    try:
+        notification = mc.notifications.patch(**fields)
+    except exc.HTTPException as he:
+        raise exc.CommandError(
+            'HTTPException code=%s message=%s' %
+            (he.code, he.message))
+    else:
+        print(jsonutils.dumps(notification, indent=2))
+
+
 def _validate_severity(severity):
     if severity.upper() not in severity_types:
-        errmsg = 'Invalid severity, not one of [' + \
-            ', '.join(severity_types) + ']'
+        errmsg = ('Invalid severity, not one of [' +
+                  ', '.join(severity_types) + ']')
         print(errmsg)
         return False
     return True
@@ -963,8 +1013,8 @@ def do_alarm_definition_update(mc, args):
     fields['ok_actions'] = _arg_split_patch_update(args.ok_actions)
     fields['undetermined_actions'] = _arg_split_patch_update(args.undetermined_actions)
     if args.actions_enabled not in enabled_types:
-        errmsg = 'Invalid value, not one of [' + \
-            ', '.join(enabled_types) + ']'
+        errmsg = ('Invalid value, not one of [' +
+                  ', '.join(enabled_types) + ']')
         print(errmsg)
         return
     fields['actions_enabled'] = args.actions_enabled in ['true', 'True']
@@ -1024,8 +1074,8 @@ def do_alarm_definition_patch(mc, args):
         fields['undetermined_actions'] = _arg_split_patch_update(args.undetermined_actions, patch=True)
     if args.actions_enabled:
         if args.actions_enabled not in enabled_types:
-            errmsg = 'Invalid value, not one of [' + \
-                ', '.join(enabled_types) + ']'
+            errmsg = ('Invalid value, not one of [' +
+                      ', '.join(enabled_types) + ']')
             print(errmsg)
             return
         fields['actions_enabled'] = args.actions_enabled in ['true', 'True']
@@ -1085,8 +1135,8 @@ def do_alarm_list(mc, args):
         fields['metric_dimensions'] = utils.format_dimensions_query(args.metric_dimensions)
     if args.state:
         if args.state.upper() not in state_types:
-            errmsg = 'Invalid state, not one of [' + \
-                ', '.join(state_types) + ']'
+            errmsg = ('Invalid state, not one of [' +
+                      ', '.join(state_types) + ']')
             print(errmsg)
             return
         fields['state'] = args.state
@@ -1295,8 +1345,8 @@ def do_alarm_update(mc, args):
     fields = {}
     fields['alarm_id'] = args.id
     if args.state.upper() not in state_types:
-        errmsg = 'Invalid state, not one of [' + \
-                 ', '.join(state_types) + ']'
+        errmsg = ('Invalid state, not one of [' +
+                  ', '.join(state_types) + ']')
         print(errmsg)
         return
     fields['state'] = args.state
@@ -1326,8 +1376,8 @@ def do_alarm_patch(mc, args):
     fields['alarm_id'] = args.id
     if args.state:
         if args.state.upper() not in state_types:
-            errmsg = 'Invalid state, not one of [' + \
-                     ', '.join(state_types) + ']'
+            errmsg = ('Invalid state, not one of [' +
+                      ', '.join(state_types) + ']')
             print(errmsg)
             return
         fields['state'] = args.state
@@ -1426,8 +1476,8 @@ def do_alarm_count(mc, args):
         fields['metric_dimensions'] = utils.format_parameters(args.metric_dimensions)
     if args.state:
         if args.state.upper() not in state_types:
-            errmsg = 'Invalid state, not one of [' + \
-                     ', '.join(state_types) + ']'
+            errmsg = ('Invalid state, not one of [' +
+                      ', '.join(state_types) + ']')
             print(errmsg)
             return
         fields['state'] = args.state
@@ -1442,8 +1492,8 @@ def do_alarm_count(mc, args):
     if args.group_by:
         group_by = args.group_by.split(',')
         if not set(group_by).issubset(set(group_by_types)):
-            errmsg = 'Invalid group-by, one or more values not in [' + \
-                     ','.join(group_by_types) + ']'
+            errmsg = ('Invalid group-by, one or more values not in [' +
+                      ','.join(group_by_types) + ']')
             print(errmsg)
             return
         fields['group_by'] = args.group_by
@@ -1528,6 +1578,25 @@ def do_alarm_history_list(mc, args):
             (he.code, he.message))
     else:
         output_alarm_history(args, alarm)
+
+
+def do_notification_type_list(mc, args):
+    '''List notification types supported by monasca.'''
+
+    try:
+        notification_types = mc.notificationtypes.list()
+    except exc.HTTPException as he:
+        raise exc.CommandError(
+            'HTTPException code=%s message=%s' %
+            (he.code, he.message))
+    else:
+        if args.json:
+            print(utils.json_formatter(notification_types))
+            return
+        else:
+            formatters = {'types': lambda x: x["type"]}
+            # utils.print_list(notification_types['types'], ["types"], formatters=formatters)
+            utils.print_list(notification_types, ["types"], formatters=formatters)
 
 
 def _translate_starttime(args):

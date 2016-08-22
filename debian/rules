@@ -1,4 +1,0 @@
-#!/usr/bin/make -f
-
-%:
-	dh $@ --with python-virtualenv --preinstall pyopenssl --preinstall ndg-httpsclient --preinstall pyasn1  

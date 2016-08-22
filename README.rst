@@ -72,7 +72,7 @@ It is easiest to source them first and then use the CLI.
 When token and endpoint are known::
 
   export OS_AUTH_TOKEN=XXX
-  export MONASCA_API_URL=http://192.168.10.4:8080/v2.0/
+  export MONASCA_API_URL=http://192.168.10.4:8070/v2.0/
 
 When using Keystone to obtain the token and endpoint::
 
@@ -90,7 +90,7 @@ When using Vagrant Environment with middleware disabled::
 
   export OS_AUTH_TOKEN=82510970543135
   export OS_NO_CLIENT_AUTH=1
-  export MONASCA_API_URL=http://192.168.10.4:8080/v2.0/
+  export MONASCA_API_URL=http://192.168.10.4:8070/v2.0/
 
 The Monasca API will treat the auth token as the tenant ID when Keystone is not enabled.
 
@@ -134,14 +134,20 @@ You'll find complete documentation on the shell by running
       measurement-list         List measurements for the specified metric.
       metric-create            Create metric.
       metric-create-raw        Create metric from raw json body.
+<<<<<<< HEAD
       metric-list              List measurement series for this tenant.
       metric-name-list         List metric names for this tenant.
+=======
+      metric-list              List metrics for this tenant.
+      metric-name-list         List names of metrics.
+>>>>>>> 7f53b750ab7fbc1657fb504e0249992fd87d6614
       metric-statistics        List measurement statistics for the specified metric.
       notification-create      Create notification.
       notification-delete      Delete notification.
       notification-export      Export multiple notifications to stdout or file (JSON)
       notification-import      Import multiple notifications from stdin or file (JSON)
       notification-list        List notifications for this tenant.
+      notification-patch       Patch notification.
       notification-show        Describe the notification.
       notification-update      Update notification.
       bash-completion          Prints all of the commands and options to stdout.
@@ -299,7 +305,7 @@ alarm-definition-show::
   | description          | ""                                                                                                 |
   | expression           | "max(cpu.load_avg_1_min) > 0"                                                                      |
   | id                   | "4bf6bfc2-c5ac-4d57-b7db-cf5313b05412"                                                             |
-  | links                | href:http://192.168.10.4:8080/v2.0/alarm-definitions/4bf6bfc2-c5ac-4d57-b7db-cf5313b05412,rel:self |
+  | links                | href:http://192.168.10.4:8070/v2.0/alarm-definitions/4bf6bfc2-c5ac-4d57-b7db-cf5313b05412,rel:self |
   | match_by             | [                                                                                                  |
   |                      |   "hostname"                                                                                       |
   |                      | ]                                                                                                  |
