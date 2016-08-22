@@ -134,13 +134,8 @@ You'll find complete documentation on the shell by running
       measurement-list         List measurements for the specified metric.
       metric-create            Create metric.
       metric-create-raw        Create metric from raw json body.
-<<<<<<< HEAD
-      metric-list              List measurement series for this tenant.
-      metric-name-list         List metric names for this tenant.
-=======
       metric-list              List metrics for this tenant.
       metric-name-list         List names of metrics.
->>>>>>> 7f53b750ab7fbc1657fb504e0249992fd87d6614
       metric-statistics        List measurement statistics for the specified metric.
       notification-create      Create notification.
       notification-delete      Delete notification.
