@@ -112,6 +112,46 @@ def do_metric_create_raw(mc, args):
     else:
         print('Successfully created metric')
 
+@utils.arg('--dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
+           help='key value pair used to specify a metric dimension. '
+           'This can be specified multiple times, or once with parameters '
+           'separated by a comma. '
+           'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
+           'that confuse the CLI parser.',
+           action='append')
+@utils.arg('--offset', metavar='<OFFSET LOCATION>',
+           help='The offset used to paginate the return data.')
+@utils.arg('--limit', metavar='<RETURN LIMIT>',
+           help='The amount of data to be returned up to the API maximum limit.')
+@utils.arg('--tenant-id', metavar='<TENANT_ID>',
+           help="Retrieve data for the specified tenant/project id instead of "
+                "the tenant/project from the user's Keystone credentials.")
+def do_metric_name_list(mc, args):
+    '''List names of metrics.'''
+    fields = {}
+    if args.dimensions:
+        fields['dimensions'] = utils.format_dimensions_query(args.dimensions)
+    if args.limit:
+        fields['limit'] = args.limit
+    if args.offset:
+        fields['offset'] = args.offset
+    if args.tenant_id:
+        fields['tenant_id'] = args.tenant_id
+
+    try:
+        metric_names = mc.metrics.list_names(**fields)
+    except exc.HTTPException as he:
+        raise exc.CommandError(
+            'HTTPException code=%s message=%s' %
+            (he.code, he.message))
+
+    if args.json:
+        print(utils.json_formatter(metric_names))
+        return
+
+    if isinstance(metric_names, list):
+        utils.print_list(metric_names, ['Name'], formatters={'Name': lambda x: x['name']})
+
 
 @utils.arg('--name', metavar='<METRIC_NAME>',
            help='Name of the metric to list.')
@@ -133,8 +173,8 @@ def do_metric_create_raw(mc, args):
 @utils.arg('--tenant-id', metavar='<TENANT_ID>',
            help="Retrieve data for the specified tenant/project id instead of "
                 "the tenant/project from the user's Keystone credentials.")
-def do_metric_name_list(mc, args):
-    '''List names of metrics.'''
+def do_metric_list(mc, args):
+    '''List metrics for this tenant.'''
     fields = {}
     if args.name:
         fields['name'] = args.name
@@ -166,63 +206,6 @@ def do_metric_name_list(mc, args):
         formatters = {
             'name': lambda x: x['name'],
             'dimensions': lambda x: utils.format_dict(x['dimensions']),
-        }
-        if isinstance(metric, list):
-            # print the list
-            utils.print_list(metric, cols, formatters=formatters)
-        else:
-            # add the dictionary to a list, so print_list works
-            metric_list = list()
-            metric_list.append(metric)
-            utils.print_list(
-                metric_list,
-                cols,
-                formatters=formatters)
-
-
-@utils.arg('--dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
-           help='key value pair used to specify a metric dimension. '
-           'This can be specified multiple times, or once with parameters '
-           'separated by a comma. '
-           'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
-           'that confuse the CLI parser.',
-           action='append')
-@utils.arg('--starttime', metavar='<UTC_START_TIME>',
-           help='measurements >= UTC time. format: 2014-01-01T00:00:00Z. OR Format: -120 (previous 120 minutes')
-@utils.arg('--endtime', metavar='<UTC_END_TIME>',
-           help='measurements <= UTC time. format: 2014-01-01T00:00:00Z.')
-@utils.arg('--offset', metavar='<OFFSET LOCATION>',
-           help='The offset used to paginate the return data.')
-@utils.arg('--limit', metavar='<RETURN LIMIT>',
-           help='The amount of data to be returned up to the API maximum limit.')
-def do_metric_name_list(mc, args):
-    '''List metric names for this tenant.'''
-    fields = {}
-    if args.dimensions:
-        fields['dimensions'] = utils.format_dimensions_query(args.dimensions)
-    if args.limit:
-        fields['limit'] = args.limit
-    if args.offset:
-        fields['offset'] = args.offset
-    if args.starttime:
-        _translate_starttime(args)
-        fields['start_time'] = args.starttime
-    if args.endtime:
-        fields['end_time'] = args.endtime
-
-    try:
-        metric = mc.metrics.list_names(**fields)
-    except exc.HTTPException as he:
-        raise exc.CommandError(
-            'HTTPException code=%s message=%s' %
-            (he.code, he.message))
-    else:
-        if args.json:
-            print(utils.json_formatter(metric))
-            return
-        cols = ['name']
-        formatters = {
-            'name': lambda x: x['name'],
         }
         if isinstance(metric, list):
             # print the list
