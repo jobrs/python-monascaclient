@@ -15,6 +15,7 @@
 
 from __future__ import print_function
 
+import logging
 import numbers
 import os
 import sys
@@ -24,6 +25,7 @@ import uuid
 import prettytable
 import six
 import yaml
+from jinja2 import Template, TemplateSyntaxError
 
 from monascaclient import exc
 
@@ -34,6 +36,8 @@ supported_formats = {
     "json": lambda x: jsonutils.dumps(x, indent=2),
     "yaml": yaml.safe_dump
 }
+
+log = logging.getLogger(__name__)
 
 
 # Decorator for cli-args
@@ -272,6 +276,35 @@ def format_list(in_list):
             key = k
         string_list.append(key)
     return '\n'.join(string_list)
+
+
+def render_alarm(alarm):
+    """
+    Expands template variables contained in an alarm
+    :param alarm: the alarm json as dict
+    :return the expanded alarm with placeholders being substituted
+    """
+    template_vars = {}
+    for metric in alarm['metrics']:
+        for k, v in metric['dimensions'].iteritems():
+            old = template_vars.get(k)
+            if not old:
+                template_vars[k] = v
+            elif isinstance(old, set):
+                old.add(v)
+            else:
+                template_vars[k] = {old, v}
+
+    # attempt interpreting description as Jinja2 template
+    # backwards compat: ignore missing alarm definition field
+    if 'description' in alarm['alarm_definition']:
+        desc = alarm['alarm_definition']['description']
+        try:
+            alarm['alarm_definition']['description'] = Template(desc).render(**template_vars)
+        except TemplateSyntaxError:
+            pass
+        except Exception:
+            log.exception("failed rendering alarm-definition: %s", desc)
 
 
 def set_env_variables(kwargs):
