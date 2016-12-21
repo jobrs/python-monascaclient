@@ -1361,6 +1361,7 @@ def do_alarm_definition_import(mc, args):
                             e.message))
                     mc.alarm_definitions.delete(
                         alarm_id=old_id)  # update is too restricted, so we delete and replace
+                    mc.alarm_definitions.create(**adef)
 
     except exc.HTTPException as he:
         raise exc.CommandError(
