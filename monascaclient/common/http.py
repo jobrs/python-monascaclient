@@ -20,10 +20,10 @@ import socket
 
 import requests
 import six
+from six.moves.urllib import parse
 
 from monascaclient import exc
 from monascaclient import ksclient
-from monascaclient.openstack.common.py3kcompat import urlutils
 
 from oslo_serialization import jsonutils
 from oslo_utils import encodeutils
@@ -50,7 +50,7 @@ def get_system_ca_file():
         if os.path.exists(ca):
             LOG.debug("Using ca file %s", ca)
             return ca
-    LOG.warn("System ca file could not be found.")
+    LOG.warning("System ca file could not be found.")
 
 
 class HTTPClient(object):
@@ -91,7 +91,7 @@ class HTTPClient(object):
         }
 
         self.verify_cert = None
-        if urlutils.urlparse(endpoint).scheme == "https":
+        if parse.urlparse(endpoint).scheme == "https":
             if kwargs.get('insecure'):
                 self.verify_cert = False
             else:
@@ -221,8 +221,8 @@ class HTTPClient(object):
                 resp = self._make_request(method, url, allow_redirects,
                                           timeout, **kwargs)
                 self._check_status_code(resp, method, **kwargs)
-            except exc.KeystoneException as e:
-                raise e
+            except exc.KeystoneException:
+                raise
         else:
             self._check_status_code(resp, method, **kwargs)
         return resp

@@ -13,9 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from six.moves.urllib import parse
+
+from monascaclient.apiclient import base
 from monascaclient.common import monasca_manager
-from monascaclient.openstack.common.apiclient import base
-from monascaclient.openstack.common.py3kcompat import urlutils
 
 
 class Alarms(base.Resource):
@@ -38,18 +39,7 @@ class AlarmsManager(monasca_manager.MonascaManager):
 
     def list(self, **kwargs):
         """Get a list of alarms."""
-        url_str = self.base_url
-        newheaders = self.get_headers()
-        if 'metric_dimensions' in kwargs:
-            dimstr = self.get_dimensions_url_string(kwargs['metric_dimensions'])
-            kwargs['metric_dimensions'] = dimstr
-
-        if kwargs:
-            url_str = url_str + '?%s' % urlutils.urlencode(kwargs, True)
-        # print url_str
-        resp, body = self.client.json_request(
-            'GET', url_str, headers=newheaders)
-        return body['elements'] if type(body) is dict else body
+        return self._list('', 'metric_dimensions', **kwargs)
 
     def delete(self, **kwargs):
         """Delete a specific alarm."""
@@ -87,7 +77,7 @@ class AlarmsManager(monasca_manager.MonascaManager):
             kwargs['metric_dimensions'] = dimstr
 
         if kwargs:
-            url_str = url_str + '?%s' % urlutils.urlencode(kwargs, True)
+            url_str = url_str + '?%s' % parse.urlencode(kwargs, True)
         resp, body = self.client.json_request('GET', url_str,
                                               headers=newheaders)
         return body
@@ -98,7 +88,7 @@ class AlarmsManager(monasca_manager.MonascaManager):
         url_str = self.base_url + '/%s/state-history' % kwargs['alarm_id']
         del kwargs['alarm_id']
         if kwargs:
-            url_str = url_str + '?%s' % urlutils.urlencode(kwargs, True)
+            url_str = url_str + '?%s' % parse.urlencode(kwargs, True)
         resp, body = self.client.json_request('GET', url_str,
                                               headers=newheaders)
         return body['elements'] if type(body) is dict else body
@@ -111,7 +101,7 @@ class AlarmsManager(monasca_manager.MonascaManager):
             dimstr = self.get_dimensions_url_string(kwargs['dimensions'])
             kwargs['dimensions'] = dimstr
         if kwargs:
-            url_str = url_str + '?%s' % urlutils.urlencode(kwargs, True)
+            url_str = url_str + '?%s' % parse.urlencode(kwargs, True)
         resp, body = self.client.json_request('GET', url_str,
                                               headers=newheaders)
         return body['elements'] if type(body) is dict else body

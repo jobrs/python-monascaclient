@@ -15,9 +15,8 @@
 
 from copy import deepcopy
 
+from monascaclient.apiclient import base
 from monascaclient.common import monasca_manager
-from monascaclient.openstack.common.apiclient import base
-from monascaclient.openstack.common.py3kcompat import urlutils
 
 
 class Notifications(base.Resource):
@@ -48,14 +47,7 @@ class NotificationsManager(monasca_manager.MonascaManager):
 
     def list(self, **kwargs):
         """Get a list of notifications."""
-        newheaders = self.get_headers()
-        url_str = self.base_url
-        if kwargs:
-            url_str = url_str + '?%s' % urlutils.urlencode(kwargs, True)
-
-        resp, body = self.client.json_request('GET', url_str,
-                                              headers=newheaders)
-        return body['elements'] if type(body) is dict else body
+        return self._list('', **kwargs)
 
     def delete(self, **kwargs):
         """Delete a notification."""

@@ -27,12 +27,11 @@ Base utilities to build API operation managers and objects on top of.
 import abc
 import copy
 
-import six
-
-from monascaclient.openstack.common.apiclient import exceptions
-from monascaclient.openstack.common.py3kcompat import urlutils
-
 from oslo_utils import strutils
+import six
+from six.moves.urllib import parse
+
+from monascaclient.apiclient import exceptions
 
 
 def getid(obj):
@@ -330,7 +329,7 @@ class CrudManager(BaseManager):
         return self._list(
             '%(base_url)s%(query)s' % {
                 'base_url': self.build_url(base_url=base_url, **kwargs),
-                'query': '?%s' % urlutils.urlencode(kwargs) if kwargs else '',
+                'query': '?%s' % parse.urlencode(kwargs) if kwargs else '',
             },
             self.collection_key)
 
@@ -369,7 +368,7 @@ class CrudManager(BaseManager):
         rl = self._list(
             '%(base_url)s%(query)s' % {
                 'base_url': self.build_url(base_url=base_url, **kwargs),
-                'query': '?%s' % urlutils.urlencode(kwargs) if kwargs else '',
+                'query': '?%s' % parse.urlencode(kwargs) if kwargs else '',
             },
             self.collection_key)
         num = len(rl)
@@ -441,8 +440,7 @@ class Resource(object):
 
     @property
     def human_id(self):
-        """Human-readable ID which can be used for bash completion.
-        """
+        """Human-readable ID which can be used for bash completion."""
         if self.NAME_ATTR in self.__dict__ and self.HUMAN_ID:
             return strutils.to_slug(getattr(self, self.NAME_ATTR))
         return None
