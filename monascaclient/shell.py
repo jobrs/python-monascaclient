@@ -140,6 +140,21 @@ class MonascaShell(object):
         parser.add_argument('--os_project_name',
                             help=argparse.SUPPRESS)
 
+        # domain scoping is not supported by Monasca (yet), therefore this is just for compatibility to previous clients
+        parser.add_argument('--os-domain-id',
+                            default=utils.env('OS_DOMAIN_ID'),
+                            help=argparse.SUPPRESS)
+
+        parser.add_argument('--os_domain_id',
+                            help=argparse.SUPPRESS)
+
+        parser.add_argument('--os-domain-name',
+                            default=utils.env('OS_DOMAIN_NAME'),
+                            help=argparse.SUPPRESS)
+
+        parser.add_argument('--os_domain_name',
+                            help=argparse.SUPPRESS)
+
         parser.add_argument('--os-project-domain-id',
                             default=utils.env('OS_PROJECT_DOMAIN_ID'),
                             help='Defaults to env[OS_PROJECT_DOMAIN_ID].')
@@ -203,21 +218,6 @@ class MonascaShell(object):
                             help='Defaults to env[OS_ENDPOINT_TYPE].')
 
         parser.add_argument('--os_endpoint_type',
-                            help=argparse.SUPPRESS)
-
-        # domain scoping is not supported by Monasca (yet), therefore this is just for compatibility to previous clients
-        parser.add_argument('--os-domain-id',
-                            default=utils.env('OS_DOMAIN_ID'),
-                            help=argparse.SUPPRESS)
-
-        parser.add_argument('--os_domain_id',
-                            help=argparse.SUPPRESS)
-
-        parser.add_argument('--os-domain-name',
-                            default=utils.env('OS_DOMAIN_NAME'),
-                            help=argparse.SUPPRESS)
-
-        parser.add_argument('--os_domain_name',
                             help=argparse.SUPPRESS)
 
         return parser
