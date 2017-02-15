@@ -52,24 +52,24 @@ notification_types = ['EMAIL', 'WEBHOOK', 'PAGERDUTY']
            help='Name of the metric to create.')
 @utils.arg('--dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
            help='key value pair used to create a metric dimension. '
-           'This can be specified multiple times, or once with parameters '
-           'separated by a comma. '
-           'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
-           'that confuse the CLI parser.',
+                'This can be specified multiple times, or once with parameters '
+                'separated by a comma. '
+                'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
+                'that confuse the CLI parser.',
            action='append')
 @utils.arg('--value-meta', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
            help='key value pair for extra information about a value. '
-           'This can be specified multiple times, or once with parameters '
-           'separated by a comma. '
-           'value_meta need quoting when they contain special chars [&,(,),{,},>,<] '
-           'that confuse the CLI parser.',
+                'This can be specified multiple times, or once with parameters '
+                'separated by a comma. '
+                'value_meta need quoting when they contain special chars [&,(,),{,},>,<] '
+                'that confuse the CLI parser.',
            action='append')
 @utils.arg('--time', metavar='<UNIX_TIMESTAMP>',
            default=time.time() * 1000, type=int,
            help='Metric timestamp in milliseconds. Default: current timestamp.')
 @utils.arg('--project-id', metavar='<CROSS_PROJECT_ID>',
            help='The Project ID to create metric on behalf of. '
-           'Requires monitoring-delegate role in keystone.',
+                'Requires monitoring-delegate role in keystone.',
            action='append')
 @utils.arg('value', metavar='<METRIC_VALUE>',
            type=float,
@@ -112,12 +112,13 @@ def do_metric_create_raw(mc, args):
     else:
         print('Successfully created metric')
 
+
 @utils.arg('--dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
            help='key value pair used to specify a metric dimension. '
-           'This can be specified multiple times, or once with parameters '
-           'separated by a comma. '
-           'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
-           'that confuse the CLI parser.',
+                'This can be specified multiple times, or once with parameters '
+                'separated by a comma. '
+                'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
+                'that confuse the CLI parser.',
            action='append')
 @utils.arg('--offset', metavar='<OFFSET LOCATION>',
            help='The offset used to paginate the return data.')
@@ -157,10 +158,10 @@ def do_metric_name_list(mc, args):
            help='Name of the metric to list.')
 @utils.arg('--dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
            help='key value pair used to specify a metric dimension. '
-           'This can be specified multiple times, or once with parameters '
-           'separated by a comma. '
-           'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
-           'that confuse the CLI parser.',
+                'This can be specified multiple times, or once with parameters '
+                'separated by a comma. '
+                'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
+                'that confuse the CLI parser.',
            action='append')
 @utils.arg('--starttime', metavar='<UTC_START_TIME>',
            help='measurements >= UTC time. format: 2014-01-01T00:00:00Z. OR Format: -120 (previous 120 minutes).')
@@ -388,10 +389,10 @@ def format_metric_dimensions(metrics):
            help='Name of the metric to list measurements.')
 @utils.arg('--dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
            help='key value pair used to specify a metric dimension. '
-           'This can be specified multiple times, or once with parameters '
-           'separated by a comma. '
-           'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
-           'that confuse the CLI parser.',
+                'This can be specified multiple times, or once with parameters '
+                'separated by a comma. '
+                'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
+                'that confuse the CLI parser.',
            action='append')
 @utils.arg('starttime', metavar='<UTC_START_TIME>',
            help='measurements >= UTC time. format: 2014-01-01T00:00:00Z. OR Format: -120 (previous 120 minutes).')
@@ -466,13 +467,13 @@ def do_measurement_list(mc, args):
            help='Name of the metric to report measurement statistics.')
 @utils.arg('statistics', metavar='<STATISTICS>',
            help='Statistics is one or more (separated by commas) of '
-           '[AVG, MIN, MAX, COUNT, SUM].')
+                '[AVG, MIN, MAX, COUNT, SUM].')
 @utils.arg('--dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
            help='key value pair used to specify a metric dimension. '
-           'This can be specified multiple times, or once with parameters '
-           'separated by a comma. '
-           'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
-           'that confuse the CLI parser.',
+                'This can be specified multiple times, or once with parameters '
+                'separated by a comma. '
+                'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
+                'that confuse the CLI parser.',
            action='append')
 @utils.arg('starttime', metavar='<UTC_START_TIME>',
            help='measurements >= UTC time. format: 2014-01-01T00:00:00Z. OR Format: -120 (previous 120 minutes).')
@@ -870,20 +871,20 @@ def do_notification_export(mc, args):
 @utils.arg('--match-by', metavar='<MATCH_BY_DIMENSION_KEY1,MATCH_BY_DIMENSION_KEY2,'
                                  '...>',
            help='The metric dimensions to use to create unique alarms. '
-           'One or more dimension key names separated by a comma. '
-           'Key names need quoting when they contain special chars [&,(,),{,},>,<] '
-           'that confuse the CLI parser.')
+                'One or more dimension key names separated by a comma. '
+                'Key names need quoting when they contain special chars [&,(,),{,},>,<] '
+                'that confuse the CLI parser.')
 @utils.arg('--alarm-actions', metavar='<NOTIFICATION-ID>',
            help='The notification method to use when an alarm state is ALARM. '
-           'This param may be specified multiple times.',
+                'This param may be specified multiple times.',
            action='append')
 @utils.arg('--ok-actions', metavar='<NOTIFICATION-ID>',
            help='The notification method to use when an alarm state is OK. '
-           'This param may be specified multiple times.',
+                'This param may be specified multiple times.',
            action='append')
 @utils.arg('--undetermined-actions', metavar='<NOTIFICATION-ID>',
            help='The notification method to use when an alarm state is '
-           'UNDETERMINED. This param may be specified multiple times.',
+                'UNDETERMINED. This param may be specified multiple times.',
            action='append')
 def do_alarm_definition_create(mc, args):
     '''Create an alarm definition.'''
@@ -952,10 +953,10 @@ def do_alarm_definition_show(mc, args):
            help='Name of the alarm definition.')
 @utils.arg('--dimensions', metavar='<KEY1=VALUE1,KEY2=VALUE2...>',
            help='key value pair used to specify a metric dimension. '
-           'This can be specified multiple times, or once with parameters '
-           'separated by a comma. '
-           'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
-           'that confuse the CLI parser.',
+                'This can be specified multiple times, or once with parameters '
+                'separated by a comma. '
+                'Dimensions need quoting when they contain special chars [&,(,),{,},>,<] '
+                'that confuse the CLI parser.',
            action='append')
 @utils.arg('--severity', metavar='<SEVERITY>',
            help='Severity is one of ["LOW", "MEDIUM", "HIGH", "CRITICAL"].')
@@ -1052,18 +1053,18 @@ def do_alarm_definition_delete(mc, args):
                 'as a comma separated list.')
 @utils.arg('ok_actions', metavar='<OK-NOTIFICATION-ID1,OK-NOTIFICATION-ID2,...>',
            help='The notification method(s) to use when an alarm state is OK '
-           'as a comma separated list.')
+                'as a comma separated list.')
 @utils.arg('undetermined_actions',
            metavar='<UNDETERMINED-NOTIFICATION-ID1,UNDETERMINED-NOTIFICATION-ID2,...>',
            help='The notification method(s) to use when an alarm state is UNDETERMINED '
-           'as a comma separated list.')
+                'as a comma separated list.')
 @utils.arg('actions_enabled', metavar='<ACTIONS-ENABLED>',
            help='The actions-enabled boolean is one of [true,false]')
 @utils.arg('match_by', metavar='<MATCH_BY_DIMENSION_KEY1,MATCH_BY_DIMENSION_KEY2,...>',
            help='The metric dimensions to use to create unique alarms. '
-           'One or more dimension key names separated by a comma. '
-           'Key names need quoting when they contain special chars [&,(,),{,},>,<] '
-           'that confuse the CLI parser.')
+                'One or more dimension key names separated by a comma. '
+                'Key names need quoting when they contain special chars [&,(,),{,},>,<] '
+                'that confuse the CLI parser.')
 @utils.arg('severity', metavar='<SEVERITY>',
            help='Severity is one of [LOW, MEDIUM, HIGH, CRITICAL].')
 def do_alarm_definition_update(mc, args):
@@ -1106,15 +1107,15 @@ def do_alarm_definition_update(mc, args):
            help='The alarm expression to evaluate. Quoted.')
 @utils.arg('--alarm-actions', metavar='<NOTIFICATION-ID>',
            help='The notification method to use when an alarm state is ALARM. '
-           'This param may be specified multiple times.',
+                'This param may be specified multiple times.',
            action='append')
 @utils.arg('--ok-actions', metavar='<NOTIFICATION-ID>',
            help='The notification method to use when an alarm state is OK. '
-           'This param may be specified multiple times.',
+                'This param may be specified multiple times.',
            action='append')
 @utils.arg('--undetermined-actions', metavar='<NOTIFICATION-ID>',
            help='The notification method to use when an alarm state is '
-           'UNDETERMINED. This param may be specified multiple times.',
+                'UNDETERMINED. This param may be specified multiple times.',
            action='append')
 @utils.arg('--actions-enabled', metavar='<ACTIONS-ENABLED>',
            help='The actions-enabled boolean is one of [true,false].')
@@ -1181,10 +1182,10 @@ def do_alarm_definition_patch(mc, args):
            help='The link to external data associated with the alarm.')
 @utils.arg('--sort-by', metavar='<SORT BY FIELDS>',
            help='Fields to sort by as a comma separated list. Valid values are alarm_id, '
-           'alarm_definition_id, state, severity, lifecycle_state, link, '
-           'state_updated_timestamp, updated_timestamp, created_timestamp. '
-           'Fields may be followed by "asc" or "desc", ex "severity desc", '
-           'to set the direction of sorting.')
+                'alarm_definition_id, state, severity, lifecycle_state, link, '
+                'state_updated_timestamp, updated_timestamp, created_timestamp. '
+                'Fields may be followed by "asc" or "desc", ex "severity desc", '
+                'to set the direction of sorting.')
 @utils.arg('--offset', metavar='<OFFSET LOCATION>',
            help='The offset used to paginate the return data.')
 @utils.arg('--limit', metavar='<RETURN LIMIT>',
