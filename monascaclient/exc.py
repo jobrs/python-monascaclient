@@ -71,7 +71,6 @@ class HTTPException(BaseException):
     def __init__(self, message=None):
         super(HTTPException, self).__init__(message)
         try:
-            log.error("exception: {}".format(message))
             self.error = jsonutils.loads(message)
         except Exception:
             self.error = {'error':
