@@ -723,8 +723,6 @@ def do_notification_update(mc, args):
 
     fields['type'] = args.type
     fields['address'] = args.address
-    if not _validate_notification_period(args.period, args.type.upper()):
-        return
     fields['period'] = args.period
     try:
         notification = mc.notifications.update(**fields)
@@ -758,9 +756,6 @@ def do_notification_patch(mc, args):
     if args.address:
         fields['address'] = args.address
     if args.period or args.period == 0:
-        if args.type and not _validate_notification_period(
-                args.period, args.type.upper()):
-            return
         fields['period'] = args.period
     try:
         notification = mc.notifications.patch(**fields)
