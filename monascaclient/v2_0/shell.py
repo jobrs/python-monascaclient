@@ -575,13 +575,6 @@ def do_metric_statistics(mc, args):
                 formatters=formatters)
 
 
-def _validate_notification_period(period, notification_type):
-    if notification_type != 'WEBHOOK' and period != 0:
-        print("Invalid period, can only be non zero for webhooks")
-        return False
-    return True
-
-
 @utils.arg('name', metavar='<NOTIFICATION_NAME>',
            help='Name of the notification to create.')
 @utils.arg('type', metavar='<TYPE>',
@@ -589,7 +582,7 @@ def _validate_notification_period(period, notification_type):
 @utils.arg('address', metavar='<ADDRESS>',
            help='A valid EMAIL Address, URL, or SERVICE KEY.')
 @utils.arg('--period', metavar='<PERIOD>', type=int, default=0,
-           help='A period for the notification method. Can only be non zero with webhooks')
+           help='A period for the notification method.')
 def do_notification_create(mc, args):
     '''Create notification.'''
 
@@ -598,8 +591,6 @@ def do_notification_create(mc, args):
     fields['type'] = args.type
     fields['address'] = args.address
     if args.period:
-        if not _validate_notification_period(args.period, args.type.upper()):
-            return
         fields['period'] = args.period
     try:
         notification = mc.notifications.create(**fields)
