@@ -745,7 +745,7 @@ def do_notification_update(mc, args):
 @utils.arg('--address', metavar='<ADDRESS>',
            help='A valid EMAIL Address, URL, or SERVICE KEY.')
 @utils.arg('--period', metavar='<PERIOD>', type=int,
-           help='A period for the notification method. Can only be non zero with webhooks')
+           help='A period for the notification method.')
 def do_notification_patch(mc, args):
     '''Patch notification.'''
     fields = {}
