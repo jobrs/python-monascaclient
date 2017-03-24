@@ -585,7 +585,6 @@ def do_metric_statistics(mc, args):
            help='A period for the notification method.')
 def do_notification_create(mc, args):
     '''Create notification.'''
-
     fields = {}
     fields['name'] = args.name
     fields['type'] = args.type
@@ -678,7 +677,6 @@ def do_notification_list(mc, args):
             'period': lambda x: x['period'],
         }
         if isinstance(notification, list):
-
             utils.print_list(
                 notification,
                 cols,
